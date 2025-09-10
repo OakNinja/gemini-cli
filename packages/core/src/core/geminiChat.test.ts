@@ -4,7 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+  type Mock,
+} from 'vitest';
 import type {
   Content,
   GenerateContentConfig,
@@ -191,6 +199,7 @@ describe('GeminiChat', () => {
 
       // 3. Action: Send the initial message.
       await chat.sendMessage(
+        'test-model',
         { message: 'How is the weather in Boston?' },
         'prompt-id-afc-bug',
       );
@@ -251,6 +260,7 @@ describe('GeminiChat', () => {
       //    after a user-role turn throws the specific error.
       await expect(
         chat.sendMessage(
+          'test-model',
           { message: 'This is an invalid consecutive user message' },
           'prompt-id-1',
         ),
@@ -278,6 +288,7 @@ describe('GeminiChat', () => {
 
       // 2. Action: Send a standard, non-streaming message.
       await chat.sendMessage(
+        'test-model',
         { message: 'test message' },
         'prompt-id-mixed-response',
       );
@@ -333,6 +344,7 @@ describe('GeminiChat', () => {
 
       // 3. Action: Send the function response back to the model.
       await chat.sendMessage(
+        'test-model',
         {
           message: {
             functionResponse: {
@@ -377,12 +389,17 @@ describe('GeminiChat', () => {
         response,
       );
 
-      await chat.sendMessage({ message: 'hello' }, 'prompt-id-1');
+      await chat.sendMessage('test-model', { message: 'hello' }, 'prompt-id-1');
 
       expect(mockContentGenerator.generateContent).toHaveBeenCalledWith(
         {
-          model: 'gemini-pro',
-          contents: [{ role: 'user', parts: [{ text: 'hello' }] }],
+          model: 'test-model',
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: 'hello' }],
+            },
+          ],
           config: {},
         },
         'prompt-id-1',
@@ -424,6 +441,7 @@ describe('GeminiChat', () => {
       // 2. Action & Assert: The stream processing should complete without throwing an error
       // because the presence of a tool call makes the empty final chunk acceptable.
       const stream = await chat.sendMessageStream(
+        'test-model',
         { message: 'test message' },
         'prompt-id-tool-call-empty-end',
       );
@@ -475,6 +493,7 @@ describe('GeminiChat', () => {
 
       // 2. Action & Assert: The stream should fail because there's no finish reason.
       const stream = await chat.sendMessageStream(
+        'test-model',
         { message: 'test message' },
         'prompt-id-no-finish-empty-end',
       );
@@ -520,6 +539,7 @@ describe('GeminiChat', () => {
 
       // 2. Action & Assert: The stream should complete without throwing an error.
       const stream = await chat.sendMessageStream(
+        'test-model',
         { message: 'test message' },
         'prompt-id-valid-then-invalid-end',
       );
@@ -576,6 +596,7 @@ describe('GeminiChat', () => {
 
       // 2. Action: Send a message and consume the stream.
       const stream = await chat.sendMessageStream(
+        'test-model',
         { message: 'test message' },
         'prompt-id-malformed-chunk',
       );
@@ -626,6 +647,7 @@ describe('GeminiChat', () => {
 
       // 2. Action: Send a message and consume the stream.
       const stream = await chat.sendMessageStream(
+        'test-model',
         { message: 'test message' },
         'prompt-id-empty-chunk-consolidation',
       );
@@ -683,6 +705,7 @@ describe('GeminiChat', () => {
 
       // 2. Action: Send a message and consume the stream.
       const stream = await chat.sendMessageStream(
+        'test-model',
         { message: 'test message' },
         'prompt-id-multi-chunk',
       );
@@ -730,6 +753,7 @@ describe('GeminiChat', () => {
 
       // 2. Action: Send a message and fully consume the stream to trigger history recording.
       const stream = await chat.sendMessageStream(
+        'test-model',
         { message: 'test message' },
         'prompt-id-mixed-chunk',
       );
@@ -792,6 +816,7 @@ describe('GeminiChat', () => {
 
       // 3. Action: Send the function response back to the model and consume the stream.
       const stream = await chat.sendMessageStream(
+        'test-model',
         {
           message: {
             functionResponse: {
@@ -843,17 +868,23 @@ describe('GeminiChat', () => {
       );
 
       const stream = await chat.sendMessageStream(
+        'test-model',
         { message: 'hello' },
         'prompt-id-1',
       );
       for await (const _ of stream) {
-        // consume stream to trigger internal logic
+        // consume stream
       }
 
       expect(mockContentGenerator.generateContentStream).toHaveBeenCalledWith(
         {
-          model: 'gemini-pro',
-          contents: [{ role: 'user', parts: [{ text: 'hello' }] }],
+          model: 'test-model',
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: 'hello' }],
+            },
+          ],
           config: {},
         },
         'prompt-id-1',
@@ -1064,6 +1095,7 @@ describe('GeminiChat', () => {
 
       // ACT: Send a message and collect all events from the stream.
       const stream = await chat.sendMessageStream(
+        'test-model',
         { message: 'test' },
         'prompt-id-yield-retry',
       );
@@ -1104,6 +1136,7 @@ describe('GeminiChat', () => {
         );
 
       const stream = await chat.sendMessageStream(
+        'test-model',
         { message: 'test' },
         'prompt-id-retry-success',
       );
@@ -1166,6 +1199,7 @@ describe('GeminiChat', () => {
       // This helper function consumes the stream and allows us to test for rejection.
       async function consumeStreamAndExpectError() {
         const stream = await chat.sendMessageStream(
+          'test-model',
           { message: 'test' },
           'prompt-id-retry-fail',
         );
@@ -1224,6 +1258,7 @@ describe('GeminiChat', () => {
 
     // 3. Send a new message
     const stream = await chat.sendMessageStream(
+      'test-model',
       { message: 'Second question' },
       'prompt-id-retry-existing',
     );
@@ -1301,6 +1336,7 @@ describe('GeminiChat', () => {
 
       // 3. Start the first message call. Do not await it yet.
       const firstMessagePromise = chat.sendMessage(
+        'test-model',
         { message: 'first' },
         'prompt-1',
       );
@@ -1310,6 +1346,7 @@ describe('GeminiChat', () => {
 
       // 4. While the first call is "in-flight", start the second message call.
       const secondMessagePromise = chat.sendMessage(
+        'test-model',
         { message: 'second' },
         'prompt-2',
       );
@@ -1375,6 +1412,7 @@ describe('GeminiChat', () => {
 
     // 2. Call the method and consume the stream.
     const stream = await chat.sendMessageStream(
+      'test-model',
       { message: 'test empty stream' },
       'prompt-id-empty-stream',
     );
@@ -1454,6 +1492,7 @@ describe('GeminiChat', () => {
 
     // 3. Start the first stream and consume only the first chunk to pause it
     const firstStream = await chat.sendMessageStream(
+      'test-model',
       { message: 'first' },
       'prompt-1',
     );
@@ -1462,6 +1501,7 @@ describe('GeminiChat', () => {
 
     // 4. While the first stream is paused, start the second call. It will block.
     const secondStreamPromise = chat.sendMessageStream(
+      'test-model',
       { message: 'second' },
       'prompt-2',
     );
@@ -1511,17 +1551,20 @@ describe('GeminiChat', () => {
     } as unknown as GenerateContentResponse;
 
     it('should use the configured model when not in fallback mode (sendMessage)', async () => {
-      vi.mocked(mockConfig.getModel).mockReturnValue('gemini-2.5-pro');
-      vi.mocked(mockConfig.isInFallbackMode).mockReturnValue(false);
-      vi.mocked(mockContentGenerator.generateContent).mockResolvedValue(
-        mockResponse,
+      vi.spyOn(mockConfig, 'isInFallbackMode').mockReturnValue(false);
+      (mockContentGenerator.generateContent as Mock).mockResolvedValue(
+        mockResponse as GenerateContentResponse,
       );
 
-      await chat.sendMessage({ message: 'test' }, 'prompt-id-res1');
+      await chat.sendMessage(
+        'test-model',
+        { message: 'test' },
+        'prompt-id-res1',
+      );
 
       expect(mockContentGenerator.generateContent).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: 'gemini-2.5-pro',
+          model: 'test-model',
         }),
         'prompt-id-res1',
       );
@@ -1534,7 +1577,11 @@ describe('GeminiChat', () => {
         mockResponse,
       );
 
-      await chat.sendMessage({ message: 'test' }, 'prompt-id-res2');
+      await chat.sendMessage(
+        'test-model',
+        { message: 'test' },
+        'prompt-id-res2',
+      );
 
       expect(mockContentGenerator.generateContent).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1555,6 +1602,7 @@ describe('GeminiChat', () => {
       );
 
       const stream = await chat.sendMessageStream(
+        'test-model',
         { message: 'test' },
         'prompt-id-res3',
       );
@@ -1609,12 +1657,9 @@ describe('GeminiChat', () => {
     });
 
     it('should call handleFallback with the specific failed model and retry if handler returns true', async () => {
-      const FAILED_MODEL = 'gemini-2.5-pro';
-      vi.mocked(mockConfig.getModel).mockReturnValue(FAILED_MODEL);
       const authType = AuthType.LOGIN_WITH_GOOGLE;
       vi.mocked(mockConfig.getContentGeneratorConfig).mockReturnValue({
         authType,
-        model: FAILED_MODEL,
       });
 
       const isInFallbackModeSpy = vi.spyOn(mockConfig, 'isInFallbackMode');
@@ -1632,6 +1677,7 @@ describe('GeminiChat', () => {
       });
 
       const result = await chat.sendMessage(
+        'test-model',
         { message: 'trigger 429' },
         'prompt-id-fb1',
       );
@@ -1642,7 +1688,7 @@ describe('GeminiChat', () => {
 
       expect(mockHandleFallback).toHaveBeenCalledWith(
         mockConfig,
-        FAILED_MODEL,
+        'test-model',
         authType,
         error429,
       );
@@ -1660,7 +1706,11 @@ describe('GeminiChat', () => {
       mockHandleFallback.mockResolvedValue(false);
 
       await expect(
-        chat.sendMessage({ message: 'test stop' }, 'prompt-id-fb2'),
+        chat.sendMessage(
+          'test-model',
+          { message: 'test stop' },
+          'prompt-id-fb2',
+        ),
       ).rejects.toThrow(error429);
 
       expect(mockContentGenerator.generateContent).toHaveBeenCalledTimes(1);
@@ -1706,6 +1756,7 @@ describe('GeminiChat', () => {
 
     // Send a message and consume the stream
     const stream = await chat.sendMessageStream(
+      'test-model',
       { message: 'test' },
       'prompt-id-discard-test',
     );
